@@ -1,4 +1,6 @@
 SHELL := /bin/bash
+CWD := $(shell cd -P -- '$(shell dirname -- "$0")' && pwd -P)
+export GOBIN := $(CWD)/.bin
 
 DB_CONTAINER_NAME=my-postgres-container
 DB_NAME=mydatabase
@@ -7,13 +9,14 @@ DB_PASSWORD=mypassword
 DB_CONNECTION_STRING=postgres://$(DB_USER):$(DB_PASSWORD)@localhost:5432/$(DB_NAME)?sslmode=disable
 
 install:
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go mod download
 	
 start: db-init
 	DB_CONNECTION_STRING=$(DB_CONNECTION_STRING) go run cmd/main.go
 
 db-init:
-	sqlc generate
+	$(CWD)/sqlc generate
 	# Create schemas
 	docker exec -i my-postgres-container psql -U $(DB_USER) -d $(DB_NAME) < ./app/services/db/sql/schema.sql
 
